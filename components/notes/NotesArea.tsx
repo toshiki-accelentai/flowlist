@@ -52,6 +52,7 @@ export default function NotesArea() {
         onSelect={setSelectedNoteId}
         onAdd={handleAddNote}
         onDelete={handleDeleteNote}
+        onRename={(id, title) => updateNoteDebounced(id, { title })}
       />
       <NoteEditor
         note={selectedNote}

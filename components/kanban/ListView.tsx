@@ -11,6 +11,7 @@ interface ListViewProps {
   onAddTask: (title: string, columnId: ColumnId, description?: string, priority?: Priority, dueDate?: number) => void;
   onDeleteTask: (id: string) => void;
   onUpdatePriority: (id: string, priority: Priority) => void;
+  onCompleteTask?: (id: string) => void;
   onCardClick?: (task: Task) => void;
 }
 
@@ -19,6 +20,7 @@ export default function ListView({
   onAddTask,
   onDeleteTask,
   onUpdatePriority,
+  onCompleteTask,
   onCardClick,
 }: ListViewProps) {
   const [addFormOpenFor, setAddFormOpenFor] = useState<ColumnId | null>(null);
@@ -145,15 +147,28 @@ export default function ListView({
                           {formatDate(task.createdAt)}
                         </span>
 
-                        {/* Delete */}
-                        <button
-                          onClick={() => onDeleteTask(task.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-zinc-300 transition-opacity"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
+                        {/* Actions */}
+                        <div className="flex items-center gap-0.5">
+                          {onCompleteTask && task.columnId !== 'completed' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onCompleteTask(task.id); }}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-emerald-400 transition-opacity"
+                              title="Mark as completed"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-zinc-300 transition-opacity"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     );
                   })}

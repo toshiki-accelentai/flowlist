@@ -17,6 +17,7 @@ interface KanbanColumnProps {
   onAddTask: (title: string, columnId: ColumnId, description?: string, priority?: Priority, dueDate?: number) => void;
   onDeleteTask: (id: string) => void;
   onUpdatePriority: (id: string, priority: Priority) => void;
+  onCompleteTask?: (id: string) => void;
   onCardClick?: (task: Task) => void;
   sortBy?: SortOption;
 }
@@ -27,6 +28,7 @@ export default function KanbanColumn({
   onAddTask,
   onDeleteTask,
   onUpdatePriority,
+  onCompleteTask,
   onCardClick,
 }: KanbanColumnProps) {
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
@@ -94,6 +96,7 @@ export default function KanbanColumn({
                   task={task}
                   onDelete={onDeleteTask}
                   onUpdatePriority={onUpdatePriority}
+                  onComplete={onCompleteTask}
                   onClick={onCardClick}
                 />
               ))}

@@ -11,6 +11,7 @@ interface KanbanCardProps {
   task: Task;
   onDelete?: (id: string) => void;
   onUpdatePriority?: (id: string, priority: Priority) => void;
+  onComplete?: (id: string) => void;
   onClick?: (task: Task) => void;
   isDragging?: boolean;
 }
@@ -19,6 +20,7 @@ export default function KanbanCard({
   task,
   onDelete,
   onUpdatePriority,
+  onComplete,
   onClick,
   isDragging,
 }: KanbanCardProps) {
@@ -86,29 +88,35 @@ export default function KanbanCard({
           <div className="flex-1 min-w-0">
             <h4 className="text-sm text-zinc-100">{task.title}</h4>
           </div>
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(task.id);
-              }}
-              className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-zinc-300 -mt-1 -mr-1 shrink-0"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+          <div className="flex items-center gap-0.5 shrink-0 -mt-1 -mr-1">
+            {onComplete && task.columnId !== 'completed' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onComplete(task.id);
+                }}
+                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-emerald-400 transition-colors"
+                title="Mark as completed"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          )}
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(task.id);
+                }}
+                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         {task.description && (
           <p className="text-xs text-zinc-400 mt-1 line-clamp-2">

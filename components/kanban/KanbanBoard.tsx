@@ -41,6 +41,11 @@ export default function KanbanBoard() {
     updateTask(id, { priority });
   };
 
+  const handleCompleteTask = (id: string) => {
+    const targetTasks = getTasksByColumn('completed');
+    moveTask(id, 'completed', targetTasks.length);
+  };
+
   const getFilteredSortedTasks = useCallback(
     (columnId: ColumnId): Task[] => {
       let columnTasks = getTasksByColumn(columnId, sortBy);
@@ -172,6 +177,7 @@ export default function KanbanBoard() {
                   onAddTask={addTask}
                   onDeleteTask={deleteTask}
                   onUpdatePriority={handleUpdatePriority}
+                  onCompleteTask={handleCompleteTask}
                   onCardClick={setSelectedTask}
                   sortBy={sortBy}
                 />
@@ -191,6 +197,7 @@ export default function KanbanBoard() {
           onAddTask={addTask}
           onDeleteTask={deleteTask}
           onUpdatePriority={handleUpdatePriority}
+          onCompleteTask={handleCompleteTask}
           onCardClick={setSelectedTask}
         />
       )}

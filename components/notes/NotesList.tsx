@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { Note } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +10,7 @@ interface NotesListProps {
   onSelect: (id: string) => void;
   onAdd: () => void;
   onDelete: (id: string) => void;
+  onRename: (id: string, title: string) => void;
 }
 
 export default function NotesList({
@@ -17,7 +19,31 @@ export default function NotesList({
   onSelect,
   onAdd,
   onDelete,
+  onRename,
 }: NotesListProps) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingId && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingId]);
+
+  const startRename = (note: Note) => {
+    setEditingId(note.id);
+    setEditTitle(note.title || '');
+  };
+
+  const commitRename = () => {
+    if (editingId) {
+      onRename(editingId, editTitle.trim() || 'Untitled');
+      setEditingId(null);
+    }
+  };
+
   return (
     <div className="border-b border-zinc-800">
       <div className="p-3 flex items-center justify-between">
@@ -57,10 +83,30 @@ export default function NotesList({
                     : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
                 )}
                 onClick={() => onSelect(note.id)}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  startRename(note);
+                }}
               >
-                <span className="truncate max-w-24">
-                  {note.title || 'Untitled'}
-                </span>
+                {editingId === note.id ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onBlur={commitRename}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitRename();
+                      if (e.key === 'Escape') setEditingId(null);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-zinc-700 text-zinc-100 text-sm rounded px-1 py-0 w-24 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  />
+                ) : (
+                  <span className="truncate max-w-24">
+                    {note.title || 'Untitled'}
+                  </span>
+                )}
                 <span
                   onClick={(e) => {
                     e.stopPropagation();

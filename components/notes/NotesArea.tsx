@@ -18,8 +18,8 @@ export default function NotesArea() {
 
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
 
-  const handleAddNote = () => {
-    const id = addNote();
+  const handleAddNote = async () => {
+    const id = await addNote();
     setSelectedNoteId(id);
   };
 

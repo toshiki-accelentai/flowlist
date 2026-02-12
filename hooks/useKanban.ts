@@ -1,21 +1,40 @@
 'use client';
 
-import { useCallback } from 'react';
-import { nanoid } from 'nanoid';
-import { useLocalStorage } from './useLocalStorage';
+import { useCallback, useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { Task, ColumnId, Priority } from '@/types';
-import { STORAGE_KEYS, SortOption, PRIORITY_ORDER } from '@/lib/constants';
+import { SortOption, PRIORITY_ORDER } from '@/lib/constants';
 
 export function useKanban() {
-  const [tasks, setTasks, isHydrated] = useLocalStorage<Task[]>(
-    STORAGE_KEYS.TASKS,
-    []
-  );
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  // Fetch tasks on mount
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchTasks = async () => {
+      const { data } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('order', { ascending: true });
+
+      if (data) {
+        setTasks(data.map(mapDbToTask));
+      }
+      setIsHydrated(true);
+    };
+
+    fetchTasks();
+  }, [user, supabase]);
 
   const sortTasks = useCallback(
     (taskList: Task[], sortBy: SortOption): Task[] => {
       if (sortBy === 'manual') {
-        return taskList.sort((a, b) => a.order - b.order);
+        return [...taskList].sort((a, b) => a.order - b.order);
       }
       return [...taskList].sort((a, b) => {
         if (sortBy === 'due-date') {
@@ -46,55 +65,62 @@ export function useKanban() {
   );
 
   const addTask = useCallback(
-    (title: string, columnId: ColumnId, description?: string, priority: Priority = 'medium', dueDate?: number) => {
+    async (title: string, columnId: ColumnId, description?: string, priority: Priority = 'medium', dueDate?: number) => {
       const trimmed = title.trim();
-      if (!trimmed) return;
+      if (!trimmed || !user) return;
 
       const columnTasks = tasks.filter((t) => t.columnId === columnId);
-      const maxOrder = columnTasks.reduce(
-        (max, t) => Math.max(max, t.order),
-        -1
-      );
+      const maxOrder = columnTasks.reduce((max, t) => Math.max(max, t.order), -1);
 
-      const newTask: Task = {
-        id: nanoid(),
+      const now = new Date().toISOString();
+      const dbRow = {
+        user_id: user.id,
         title: trimmed,
-        description: description?.trim() || undefined,
+        description: description?.trim() || null,
         priority,
-        dueDate,
-        columnId,
+        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        column_id: columnId,
         order: maxOrder + 1,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        created_at: now,
+        updated_at: now,
       };
 
-      setTasks((prev) => [...prev, newTask]);
+      const { data } = await supabase.from('tasks').insert(dbRow).select().single();
+      if (data) {
+        setTasks((prev) => [...prev, mapDbToTask(data)]);
+      }
     },
-    [tasks, setTasks]
+    [tasks, user, supabase]
   );
 
   const updateTask = useCallback(
-    (id: string, updates: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'dueDate'>>) => {
+    async (id: string, updates: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'dueDate'>>) => {
+      const dbUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (updates.title !== undefined) dbUpdates.title = updates.title;
+      if (updates.description !== undefined) dbUpdates.description = updates.description || null;
+      if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
+      if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate ? new Date(updates.dueDate).toISOString() : null;
+
+      await supabase.from('tasks').update(dbUpdates).eq('id', id);
       setTasks((prev) =>
         prev.map((task) =>
-          task.id === id
-            ? { ...task, ...updates, updatedAt: Date.now() }
-            : task
+          task.id === id ? { ...task, ...updates, updatedAt: Date.now() } : task
         )
       );
     },
-    [setTasks]
+    [supabase]
   );
 
   const deleteTask = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      await supabase.from('tasks').delete().eq('id', id);
       setTasks((prev) => prev.filter((task) => task.id !== id));
     },
-    [setTasks]
+    [supabase]
   );
 
   const moveTask = useCallback(
-    (taskId: string, targetColumnId: ColumnId, targetIndex: number) => {
+    async (taskId: string, targetColumnId: ColumnId, targetIndex: number) => {
       setTasks((prev) => {
         const taskToMove = prev.find((t) => t.id === taskId);
         if (!taskToMove) return prev;
@@ -118,14 +144,25 @@ export function useKanban() {
           (t) => t.columnId !== targetColumnId && t.id !== taskId
         );
 
-        return [...otherTasks, ...reorderedTargetTasks];
+        const newTasks = [...otherTasks, ...reorderedTargetTasks];
+
+        // Persist to Supabase
+        reorderedTargetTasks.forEach((t) => {
+          supabase.from('tasks').update({
+            column_id: t.columnId,
+            order: t.order,
+            updated_at: new Date().toISOString(),
+          }).eq('id', t.id).then(() => {});
+        });
+
+        return newTasks;
       });
     },
-    [setTasks]
+    [supabase]
   );
 
   const reorderInColumn = useCallback(
-    (columnId: ColumnId, activeId: string, overId: string) => {
+    async (columnId: ColumnId, activeId: string, overId: string) => {
       setTasks((prev) => {
         const columnTasks = prev
           .filter((t) => t.columnId === columnId)
@@ -147,10 +184,18 @@ export function useKanban() {
 
         const otherTasks = prev.filter((t) => t.columnId !== columnId);
 
+        // Persist to Supabase
+        reorderedTasks.forEach((t) => {
+          supabase.from('tasks').update({
+            order: t.order,
+            updated_at: new Date().toISOString(),
+          }).eq('id', t.id).then(() => {});
+        });
+
         return [...otherTasks, ...reorderedTasks];
       });
     },
-    [setTasks]
+    [supabase]
   );
 
   return {
@@ -162,5 +207,20 @@ export function useKanban() {
     deleteTask,
     moveTask,
     reorderInColumn,
+  };
+}
+
+// Map Supabase row to frontend Task type
+function mapDbToTask(row: Record<string, unknown>): Task {
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    description: (row.description as string) || undefined,
+    priority: row.priority as Priority,
+    dueDate: row.due_date ? new Date(row.due_date as string).getTime() : undefined,
+    columnId: row.column_id as ColumnId,
+    order: row.order as number,
+    createdAt: new Date(row.created_at as string).getTime(),
+    updatedAt: new Date(row.updated_at as string).getTime(),
   };
 }

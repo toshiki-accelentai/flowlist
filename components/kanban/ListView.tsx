@@ -11,6 +11,7 @@ interface ListViewProps {
   onAddTask: (title: string, columnId: ColumnId, description?: string, priority?: Priority, dueDate?: number) => void;
   onDeleteTask: (id: string) => void;
   onUpdatePriority: (id: string, priority: Priority) => void;
+  onCardClick?: (task: Task) => void;
 }
 
 export default function ListView({
@@ -18,6 +19,7 @@ export default function ListView({
   onAddTask,
   onDeleteTask,
   onUpdatePriority,
+  onCardClick,
 }: ListViewProps) {
   const [addFormOpenFor, setAddFormOpenFor] = useState<ColumnId | null>(null);
   const cyclePriority = (task: Task) => {
@@ -106,7 +108,8 @@ export default function ListView({
                     return (
                       <div
                         key={task.id}
-                        className="group grid grid-cols-[1fr_100px_100px_100px_40px] gap-2 px-3 py-2 border-b border-zinc-800/50 last:border-0 hover:bg-zinc-800/30 items-center"
+                        onClick={() => onCardClick?.(task)}
+                        className="group grid grid-cols-[1fr_100px_100px_100px_40px] gap-2 px-3 py-2 border-b border-zinc-800/50 last:border-0 hover:bg-zinc-800/30 items-center cursor-pointer"
                       >
                         {/* Title + description */}
                         <div className="min-w-0">

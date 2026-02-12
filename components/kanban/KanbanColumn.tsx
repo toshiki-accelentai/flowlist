@@ -17,6 +17,7 @@ interface KanbanColumnProps {
   onAddTask: (title: string, columnId: ColumnId, description?: string, priority?: Priority, dueDate?: number) => void;
   onDeleteTask: (id: string) => void;
   onUpdatePriority: (id: string, priority: Priority) => void;
+  onCardClick?: (task: Task) => void;
   sortBy?: SortOption;
 }
 
@@ -26,6 +27,7 @@ export default function KanbanColumn({
   onAddTask,
   onDeleteTask,
   onUpdatePriority,
+  onCardClick,
 }: KanbanColumnProps) {
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
@@ -92,6 +94,7 @@ export default function KanbanColumn({
                   task={task}
                   onDelete={onDeleteTask}
                   onUpdatePriority={onUpdatePriority}
+                  onClick={onCardClick}
                 />
               ))}
             </div>

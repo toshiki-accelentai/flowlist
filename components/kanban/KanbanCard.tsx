@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task, Priority } from '@/types';
@@ -10,6 +11,7 @@ interface KanbanCardProps {
   task: Task;
   onDelete?: (id: string) => void;
   onUpdatePriority?: (id: string, priority: Priority) => void;
+  onClick?: (task: Task) => void;
   isDragging?: boolean;
 }
 
@@ -17,6 +19,7 @@ export default function KanbanCard({
   task,
   onDelete,
   onUpdatePriority,
+  onClick,
   isDragging,
 }: KanbanCardProps) {
   const {
@@ -31,6 +34,23 @@ export default function KanbanCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+  };
+
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStart.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerStart.current || !onClick) return;
+    const dx = e.clientX - pointerStart.current.x;
+    const dy = e.clientY - pointerStart.current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance < 5) {
+      onClick(task);
+    }
+    pointerStart.current = null;
   };
 
   const priority = PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium;
@@ -49,6 +69,8 @@ export default function KanbanCard({
       style={style}
       {...attributes}
       {...listeners}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       className={cn(
         'group relative bg-zinc-800 border border-zinc-700 rounded overflow-hidden cursor-grab active:cursor-grabbing',
         (isDragging || isSortableDragging) && 'opacity-50',

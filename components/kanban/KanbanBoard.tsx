@@ -19,6 +19,7 @@ import KanbanColumn from './KanbanColumn';
 import KanbanCard from './KanbanCard';
 import BoardToolbar from './BoardToolbar';
 import ListView from './ListView';
+import TaskDetailModal from './TaskDetailModal';
 
 export default function KanbanBoard() {
   const {
@@ -52,6 +53,7 @@ export default function KanbanBoard() {
   );
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -170,6 +172,7 @@ export default function KanbanBoard() {
                   onAddTask={addTask}
                   onDeleteTask={deleteTask}
                   onUpdatePriority={handleUpdatePriority}
+                  onCardClick={setSelectedTask}
                   sortBy={sortBy}
                 />
               ))}
@@ -188,6 +191,23 @@ export default function KanbanBoard() {
           onAddTask={addTask}
           onDeleteTask={deleteTask}
           onUpdatePriority={handleUpdatePriority}
+          onCardClick={setSelectedTask}
+        />
+      )}
+
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={(id, updates) => {
+            const { columnId, ...taskUpdates } = updates;
+            updateTask(id, taskUpdates);
+            if (columnId && columnId !== selectedTask.columnId) {
+              const targetTasks = getTasksByColumn(columnId);
+              moveTask(id, columnId, targetTasks.length);
+            }
+          }}
+          onDelete={deleteTask}
         />
       )}
     </div>

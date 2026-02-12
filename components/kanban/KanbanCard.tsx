@@ -40,6 +40,8 @@ export default function KanbanCard({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     pointerStart.current = { x: e.clientX, y: e.clientY };
+    // Call dnd-kit's original onPointerDown so drag still works
+    listeners?.onPointerDown?.(e as unknown as React.PointerEvent<Element>);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -68,7 +70,6 @@ export default function KanbanCard({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       className={cn(

@@ -34,7 +34,7 @@ export default function KanbanBoard() {
   } = useKanban();
 
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
-  const [sortBy, setSortBy] = useState<SortOption>('manual');
+  const [sortBy, setSortBy] = useState<SortOption>('priority');
   const [filterPriority, setFilterPriority] = useState<Priority | null>(null);
 
   const handleUpdatePriority = (id: string, priority: Priority) => {

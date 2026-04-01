@@ -46,11 +46,12 @@ export default function NotesList({
 
   return (
     <div className="border-b border-zinc-800">
-      <div className="p-3 flex items-center justify-between">
+      <div className="p-3 pr-10 flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-400">Notes</h3>
         <button
           onClick={onAdd}
           className="text-zinc-500 hover:text-zinc-300 p-1"
+          title="Add note"
         >
           <svg
             className="w-4 h-4"
